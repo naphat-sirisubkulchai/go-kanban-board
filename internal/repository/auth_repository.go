@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/config"
 	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/models"
+	"gorm.io/gorm"
 )
 
 type AuthRepository interface {
@@ -10,19 +10,21 @@ type AuthRepository interface {
 	GetUserByEmail(email string) (*models.User, error)
 }
 
-type authRepo struct{}
+type authRepo struct {
+	db *gorm.DB
+}
 
-func NewAuthRepository() AuthRepository {
-	return &authRepo{}
+func NewAuthRepository(db *gorm.DB) AuthRepository {
+	return &authRepo{db: db}
 }
 
 func (r *authRepo) CreateUser(user *models.User) error {
-	return config.DB.Create(user).Error
+	return r.db.Create(user).Error
 }
 
 func (r *authRepo) GetUserByEmail(email string) (*models.User, error) {
 	var user models.User
-	if err := config.DB.Where("email = ?", email).First(&user).Error; err != nil {
+	if err := r.db.Where("email = ?", email).First(&user).Error; err != nil {
 		return nil, err
 	}
 	return &user, nil

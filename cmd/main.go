@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -6,38 +5,49 @@ import (
 
 	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/config"
 	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/handler"
+	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/infrastucture"
+	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/middleware"
 	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/repository"
 	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/usecase"
-	"github.com/naphat-sirisubkulchai/go-kanban-board/internal/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
 
 func main() {
-	config.InitDB()
+	// Load config
+	config.LoadEnv()
 
+	// Connect external dependencies
+	db := infrastructure.ConnectDatabase()
+	infrastructure.ConnectRedis()
+
+	// Create app
 	app := fiber.New()
-	authRepo := repository.NewAuthRepository()
-	notificationRepo := repository.NewNotificationRepository()
-	authUsecase := usecase.NewAuthUsecase(authRepo)
-	authHandler := handler.NewAuthHandler(authUsecase)
-	userRepo := repository.NewUserRepository()
-	userUsecase := usecase.NewUserUsecase(userRepo)
-	userHandler := handler.NewUserHandler(userUsecase)
-	boardRepo := repository.NewBoardRepository()
-	boardUsecase := usecase.NewBoardUsecase(boardRepo,notificationRepo)
-	boardHandler := handler.NewBoardHandler(boardUsecase)
-	
-	columnRepo := repository.NewColumnRepository()
-	columnUsecase := usecase.NewColumnUsecase(columnRepo)
-	columnHandler := handler.NewColumnHandler(columnUsecase)
-	
-	taskRepo := repository.NewTaskRepository()
-	taskUsecase := usecase.NewTaskUsecase(taskRepo,notificationRepo)
-	taskHandler := handler.NewTaskHandler(taskUsecase)
 
+	// Repositories
+	authRepo := repository.NewAuthRepository(db)
+	notificationRepo := repository.NewNotificationRepository(db)
+	userRepo := repository.NewUserRepository(db)
+	boardRepo := repository.NewBoardRepository(db)
+	columnRepo := repository.NewColumnRepository(db)
+	taskRepo := repository.NewTaskRepository(db)
+
+	// Usecases
+	authUsecase := usecase.NewAuthUsecase(authRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo)
+	boardUsecase := usecase.NewBoardUsecase(boardRepo, notificationRepo)
+	columnUsecase := usecase.NewColumnUsecase(columnRepo)
+	taskUsecase := usecase.NewTaskUsecase(taskRepo, notificationRepo)
 	notificationUsecase := usecase.NewNotificationUsecase(notificationRepo)
+
+	// Handlers
+	authHandler := handler.NewAuthHandler(authUsecase)
+	userHandler := handler.NewUserHandler(userUsecase)
+	boardHandler := handler.NewBoardHandler(boardUsecase)
+	columnHandler := handler.NewColumnHandler(columnUsecase)
+	taskHandler := handler.NewTaskHandler(taskUsecase)
 	notificationHandler := handler.NewNotificationHandler(notificationUsecase)
+
 
 
 
